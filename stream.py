@@ -4,7 +4,7 @@ import PIL.Image
 import os
 import google.generativeai as genai
 
-genai.configure(api_key="AIzaSyBC_HCSDc8SSdj99jHj2eBq6YRGqqZo_i0")
+genai.configure(api_key=api_key)
 model = genai.GenerativeModel(model_name="gemini-1.5-pro")
 
 # Dummy credentials for Government and Industry

@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 import PIL.Image
-import os
 import google.generativeai as genai
 
-genai.configure(api_key=api_key)
+# Configure Gemini API
+genai.configure(api_key="Your api key")
 model = genai.GenerativeModel(model_name="gemini-1.5-pro")
 
 # Dummy credentials for Government and Industry
@@ -33,7 +33,7 @@ def home_page():
         if st.button("👤 Public"):
             st.session_state.page = "Public"
     with col2:
-        if st.button("🏛️ Government"):
+        if st.button("🏛 Government"):
             st.session_state.page = "Login"
             st.session_state.role = "Government"
     with col3:
@@ -47,7 +47,6 @@ def login_page():
     st.markdown(f"<h1 style='color: #4CAF50;'>Login - {role}</h1>", unsafe_allow_html=True)
     st.write(f"Please enter your login details for {role}.")
 
-    # Credentials based on role
     username = st.text_input("👤 Username")
     password = st.text_input("🔒 Password", type="password")
 
@@ -83,6 +82,7 @@ def public_page():
                 ),
             )
             st.write(response.text)
+
     # Text Input Section
     st.subheader("💬 Enter Text Data")
     prompt = st.text_area("Enter text related to trash classification")
@@ -96,7 +96,7 @@ def public_page():
         )
         st.write(response.text)
 
-# Industry Dashboard for Waste Entry
+# Industry Dashboard for Waste Entry and AI Prompt
 def industry_dashboard():
     st.markdown("<h1 style='color: #4CAF50;'>Industry Dashboard</h1>", unsafe_allow_html=True)
     st.write("### Enter Waste Information")
@@ -106,9 +106,9 @@ def industry_dashboard():
         "Plastic Bottle", "Glass Jar", "Aluminum Can", "Paper", "Cardboard",
         "Organic Waste", "E-Waste", "Textiles", "Food Waste", "Metal"
     ]
-    
+
     waste_type = st.text_input("Enter Waste Type (e.g., Plastic Bottle, Metal, etc.)")
-    
+
     # Show suggestions as the user types
     if waste_type:
         suggestions = [waste for waste in waste_types if waste_type.lower() in waste.lower()]
@@ -142,6 +142,38 @@ def industry_dashboard():
         df = pd.DataFrame(st.session_state.industry_submitted_data)
         st.dataframe(df)
 
+    # Prompt Field for AI to Generate Suggestions
+    st.subheader("🔮 Generate Product Suggestions")
+    prompt = st.text_area(
+        "Enter your query for generating suggestions based on the data entered (e.g., 'Suggest best products from the waste data')."
+    )
+
+    if st.button("Generate Suggestions"):
+        if st.session_state.industry_submitted_data:
+            # Create a summary of the submitted data for AI
+            data_summary = "\n".join(
+                [
+                    f"{entry['Amount']} {entry['Amount Type']} of {entry['Waste Type']}"
+                    for entry in st.session_state.industry_submitted_data
+                ]
+            )
+            # Generate AI prompt
+            ai_prompt = (
+                f"The following waste data has been submitted:\n\n{data_summary}\n\n"
+                f"Based on this, {prompt}"
+            )
+            response = model.generate_content(
+                [ai_prompt],
+                generation_config=genai.GenerationConfig(
+                    max_output_tokens=1000,
+                    temperature=0.7,
+                ),
+            )
+            st.subheader("AI Suggestions")
+            st.write(response.text)
+        else:
+            st.warning("No data submitted yet. Please add waste data before generating suggestions.")
+
 # Government Dashboard
 def government_dashboard():
     st.markdown("<h1 style='color: #4CAF50;'>Government Dashboard</h1>", unsafe_allow_html=True)
@@ -149,10 +181,8 @@ def government_dashboard():
 
 # Main Function to Handle Page Navigation
 def main():
-    # Set Page Configurations
-    st.set_page_config(page_title="Trash Classifier", page_icon="♻️", layout="wide")
+    st.set_page_config(page_title="Trash Classifier", page_icon="♻", layout="wide")
 
-    # Page Navigation Logic
     if st.session_state.page == "Home":
         home_page()
     elif st.session_state.page == "Login":
@@ -164,6 +194,5 @@ def main():
     elif st.session_state.page == "Government Dashboard":
         government_dashboard()
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
-
